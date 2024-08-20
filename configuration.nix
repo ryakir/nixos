@@ -104,6 +104,7 @@ services.tailscale.enable = true;
     wget
     cifs-utils
     htop
+    ddclient
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -149,4 +150,16 @@ services.tailscale.enable = true;
   system.stateVersion = "23.11"; # Did you read the comment?
   
   programs.nix-ld.enable = true;
+
+
+  services.ddclient = {
+    enable = true;
+    ssl = true;
+    use = "web";
+    protocol = "cloudflare";
+    username = "roman@yakirevich.net";
+    passwordFile = "/home/roman/nixos/ddclient-password.txt";
+    zone = "yakirevich.dev";
+    domains = ["yakirevich.dev"];
+  };
 }
