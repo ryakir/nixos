@@ -1,6 +1,6 @@
 ddclient.conf
 ddclient-password.txt
-data/*
+data/
 
 # Environments
 .env
