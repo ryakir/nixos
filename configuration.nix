@@ -11,6 +11,8 @@
       (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
     ];
 
+     nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   services.vscode-server.enable = true;
 
   # Use the systemd-boot EFI boot loader.
@@ -94,6 +96,7 @@ services.tailscale.enable = true;
     packages = with pkgs; [
       git
       tree
+      gh
     ];
   };
 
