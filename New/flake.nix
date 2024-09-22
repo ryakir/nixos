@@ -10,13 +10,17 @@
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    vscode-server = {
+      url = "github:nix-community/nixos-vscode-server";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs =
     {
       nixpkgs,
       home-manager,
-      nixos-wsl,
       nix-index-database,
+      vscode-server,
       ...
     }@inputs:
     let
@@ -36,7 +40,7 @@
             sharedModules = homeManagerModules;
           };
         }
-        nixos-wsl.nixosModules.wsl
+        vscode-server.nixosModules.default
       ];
       homeManagerModules = [
         nixRegistry

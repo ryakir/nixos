@@ -59,10 +59,7 @@
   environment = {
     shells = with pkgs; [ zsh ];
     pathsToLink = [ "/share/zsh" ];
-    systemPackages = with pkgs; [
-      wget
-      ddclient
-    ];
+    systemPackages = with pkgs; [ wget ];
   };
 
   services = {
@@ -79,7 +76,7 @@
     ddclient = {
       enable = true;
       ssl = true;
-      use = "web";
+      usev4 = "web";
       protocol = "cloudflare";
       username = "roman@yakirevich.net";
       passwordFile = "/home/roman/nixos/ddclient-password.txt";
