@@ -37,6 +37,36 @@
       enable = true;
       wifi.powersave = false;
     };
+    firewall = {
+      enable = true;
+      allowedUDPPorts = [ 51820 ];
+    };
+    nat = {
+      enable = true;
+      externalInterface = "end0";
+      internalInterfaces = [ "wg0" ];
+    };
+    wg-quick.interfaces = {
+      wg0 = {
+        address = [ "10.200.200.1/24" ];
+        listenPort = 51820;
+        privateKeyFile = "/home/wg0_privatekey";
+        postUp = ''
+          ${pkgs.iptables}/bin/iptables -A FORWARD -i wg0 -j ACCEPT
+          ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 10.200.200.1/24 -o end0 -j MASQUERADE
+        '';
+        preDown = ''
+          ${pkgs.iptables}/bin/iptables -D FORWARD -i wg0 -j ACCEPT
+          ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 10.200.200.1/24 -o end0 -j MASQUERADE
+        '';
+        peers = [
+          {
+            publicKey = "yz7sOEPeYVzdnpVhB99POm8JuWnh6D3gJvOMEqJwBEg=";
+            allowedIPs = [ "10.200.200.2/32" ];
+          }
+        ];
+      };
+    };
   };
 
   services.hardware.argonone.enable = true;
