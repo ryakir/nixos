@@ -67,7 +67,10 @@
 
   profiles = {
     dev.enable = true;
-    ssh.enable = true;
+    ssh = {
+      enable = true;
+      ports = [ 26522 ];
+    };
     system.enable = true;
   };
 }
