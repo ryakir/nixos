@@ -1,139 +1,122 @@
-# Edit this configuration file to define what should be installed on
-# your system. Help is available in the configuration.nix(5) man page, on
-# https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
-{ config, lib, pkgs, ... }:
+{
+  imports = [ ./hardware-configuration.nix ];
 
-let unstable = import <nixos-unstable> {}; in {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
+  nix = {
+    nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+      persistent = true;
+    };
+    optimise.automatic = true;
+    settings.experimental-features = [
+      "nix-command"
+      "flakes"
     ];
+  };
 
-     nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nixpkgs.config.allowUnfree = true;
 
-  services.vscode-server.enable = true;
-
-  # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "yakirevich"; # Define your hostname.
-  # Pick only one of the below networking options.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-  networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+  networking.hostName = "yakirevich";
+  networking.networkmanager.enable = true;
 
-  # Set your time zone.
   time.timeZone = "Asia/Jerusalem";
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
+  i18n.defaultLocale = "en_US.UTF-8";
 
-  # Select internationalisation properties.
-  # i18n.defaultLocale = "en_US.UTF-8";
-  # console = {
-  #   font = "Lat2-Terminus16";
-  #   keyMap = "us";
-  #   useXkbConfig = true; # use xkb.options in tty.
-  # };
-
-  # Mount Synology
-
-
-  # For mount.cifs, required unless domain name resolution is not needed.
-
-  # fileSystems."/mnt/share" = {
-  #   device = "//10.0.0.100/media";
-  #   fsType = "cifs";
-  #   options = let
-  #     # this line prevents hanging on network split
-  #     automount_opts = "x-systemd.automount,noauto,x-systemd.idle-timeout=60,x-systemd.device-timeout=5s,x-systemd.mount-timeout=5s";
-
-  #   in ["${automount_opts},credentials=/home/roman/smb-secrets"];
-  
-  # };
   fileSystems."/mnt/yfsnfs" = {
-    device = "10.0.0.100:/volume1/video";
+    device = "192.168.1.100:/volume1/video";
     fsType = "nfs";
   };
-    fileSystems."/mnt/media" = {
-    device = "10.0.0.100:/volume1/media";
+  fileSystems."/mnt/media" = {
+    device = "192.168.1.100:/volume1/media";
     fsType = "nfs";
   };
 
+  virtualisation.docker.enable = true;
 
-
-services.tailscale.enable = true;
-
-
-  # Enable the X11 windowing system.
-  # services.xserver.enable = true;
-
-
-  
-
-  # Configure keymap in X11
-  # services.xserver.xkb.layout = "us";
-  # services.xserver.xkb.options = "eurosign:e,caps:escape";
-
-  # Enable CUPS to print documents.
-  # services.printing.enable = true;
-  virtualisation.docker.enable = true; 
- 
-  # Enable sound.
-  # sound.enable = true;
-  # hardware.pulseaudio.enable = true;
-
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.roman = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "docker" ]; # Enable ‘sudo’ for the user.
-    packages = with pkgs; [
-      git
-      tree
-      gh
-      unstable.uv
+    extraGroups = [
+      "wheel"
+      "docker"
     ];
+    shell = pkgs.zsh;
+  };
+  home-manager.users.roman = import ./user.nix;
+
+  environment = {
+    shells = with pkgs; [ zsh ];
+    pathsToLink = [ "/share/zsh" ];
+    systemPackages = with pkgs; [ wget ];
   };
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    wget
-    cifs-utils
-    htop
-    ddclient
-  ];
+  fonts.packages = with pkgs; [(nerdfonts.override {fonts = ["JetBrainsMono"];})];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
+  services = {
+    openssh = {
+      enable = true;
+      # settings = {
+      #   KbdInteractiveAuthentication = false;
+      #   PasswordAuthentication = false;
+      #   PermitRootLogin = "no";
+      # };
+    };
+    tailscale.enable = true;
+    vscode-server.enable = true;
+    ddclient = {
+      enable = true;
+      ssl = true;
+      usev4 = "web";
+      protocol = "cloudflare";
+      username = "roman@yakirevich.net";
+      passwordFile = "/home/roman/nixos/ddclient-password.txt";
+      zone = "yakirevich.dev";
+      domains = [ "yakirevich.dev" ];
+    };
+    envfs.enable = true;
+  };
 
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
-
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
-
-  # Copy the NixOS configuration file and link it from the resulting system
-  # (/run/current-system/configuration.nix). This is useful in case you
-  # accidentally delete configuration.nix.
-  system.copySystemConfiguration = true;
+  programs = {
+    zsh.enable = true;
+    git = {
+      enable = true;
+      lfs.enable = true;
+    };
+    vim.enable = true;
+    nix-ld = {
+      enable = true;
+      libraries = with pkgs; [
+        zlib
+        zstd
+        stdenv.cc.cc
+        curl
+        openssl
+        attr
+        libssh
+        bzip2
+        libxml2
+        acl
+        libsodium
+        util-linux
+        xz
+        systemd
+        libGL
+        glib
+      ];
+    };
+  };
 
   # This option defines the first version of NixOS you have installed on this particular machine,
   # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.
@@ -152,18 +135,4 @@ services.tailscale.enable = true;
   #
   # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
   system.stateVersion = "23.11"; # Did you read the comment?
-  
-  programs.nix-ld.enable = true;
-
-
-  services.ddclient = {
-    enable = true;
-    ssl = true;
-    use = "web";
-    protocol = "cloudflare";
-    username = "roman@yakirevich.net";
-    passwordFile = "/home/roman/nixos/ddclient-password.txt";
-    zone = "yakirevich.dev";
-    domains = ["yakirevich.dev"];
-  };
 }
